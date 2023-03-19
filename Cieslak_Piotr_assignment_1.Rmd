@@ -1,0 +1,194 @@
+---
+title: "Homework assignment no. 1"
+author: "Piotr Cieslak"
+date: '2022-11-27'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+source("cieslak_piotr_assignment_1.R")
+```
+
+```{r packages, cache=TRUE}
+library(sqldf)
+library(dplyr)
+library(data.table)
+library(microbenchmark)
+```
+
+```{r data, cache=TRUE, dependson="packages"}
+
+Posts <- read.csv("/home/piotrcieslak/mini/data_processing/hw1/travel_stackexchange_com/Posts.csv.gz")
+Users <- read.csv("/home/piotrcieslak/mini/data_processing/hw1/travel_stackexchange_com/Users.csv.gz")
+Badges <- read.csv("/home/piotrcieslak/mini/data_processing/hw1/travel_stackexchange_com/Badges.csv.gz")
+Comments <- read.csv("/home/piotrcieslak/mini/data_processing/hw1/travel_stackexchange_com/Comments.csv.gz")
+Votes <- read.csv("/home/piotrcieslak/mini/data_processing/hw1/travel_stackexchange_com/Votes.csv.gz")
+
+```
+
+## Introduction
+
+This report contains comments, benchmarks and test of correctness of the solutions to assignment number 1
+from Data Processing in R and Python. Below I explain each query from the assignment.
+
+## Queries
+
+Each subsection is dedicated for one query. In every one of them I placed the interpretation of the query,
+tests, whether each of my solutions is equivalent to the expected result, and benchmarks. Note: I used dplyr::all_equals() function to test the equivalency.
+
+* ### Query 1
+
+
+  
+  ##### Interpretation
+
+  The first query returns number of all posts made in each year.
+
+  ##### Test of equivalency
+  
+  ```{r}
+  dplyr::all_equal(sqldf_1(Posts), base_1(Posts))
+  dplyr::all_equal(sqldf_1(Posts), dplyr_1(Posts))
+  dplyr::all_equal(sqldf_1(Posts), data.table_1(Posts))
+  ```
+  
+  ##### Benchmark
+  
+  ```{r echo=FALSE}
+  microbenchmark::microbenchmark(
+    sqldf=sqldf_1(Posts),
+    base=base_1(Posts),
+    dplyr=dplyr_1(Posts),
+    data.table=data.table_1(Posts)
+  )
+  ```
+  
+* ### Query 2
+  
+  
+  
+  #### Interpretation
+  
+  The second query returns the id and name of top 10 users who are authors
+  of posts of type question with the most number of views on
+  those posts.
+  
+  ##### Test of equivalency
+  
+  ```{r}
+  dplyr::all_equal(sqldf_2(Users, Posts), base_2(Users, Posts))
+  dplyr::all_equal(sqldf_2(Users, Posts), dplyr_2(Users, Posts))
+  dplyr::all_equal(sqldf_2(Users, Posts), data.table_2(Users, Posts))
+  ```
+  
+  ##### Benchmark
+  
+  ```{r echo=FALSE}
+  microbenchmark::microbenchmark(
+    sqldf=sqldf_2(Users, Posts),
+    base=base_2(Users, Posts),
+    dplyr=dplyr_2(Users, Posts),
+    data.table=data.table_2(Users, Posts)
+  )
+  ```
+ 
+* ### Query 3
+  
+  
+  
+  ##### Interpretation
+
+  The third query returns the most frequently given Badge every year.
+  
+  ##### Test of equivalency
+  
+  ```{r}
+  dplyr::all_equal(sqldf_3(Badges), base_3(Badges))
+  dplyr::all_equal(sqldf_3(Badges), dplyr_3(Badges))
+  dplyr::all_equal(sqldf_3(Badges), data.table_3(Badges))
+  ```
+  
+  ##### Benchmark
+  
+  ```{r echo=FALSE}
+  microbenchmark::microbenchmark(
+    sqldf=sqldf_3(Badges),
+    base=base_3(Badges),
+    dplyr=dplyr_3(Badges),
+    data.table=data.table_3(Badges)
+  )
+  ```
+  
+* ### Query 4
+  
+  
+  
+  ##### Interpretation
+
+  The fourth query returns top 10 posts with the biggest cumulated comments
+  score, along with title of each post, number of all comments, post view count, 
+  name of the author and author's reputation.
+  
+  ##### Test of equivalency
+  
+  
+  ```{r}
+  dplyr::all_equal(sqldf_4(Comments, Posts, Users), base_4(Comments, Posts, Users))
+  dplyr::all_equal(sqldf_4(Comments, Posts, Users), dplyr_4(Comments, Posts, Users))
+  dplyr::all_equal(sqldf_4(Comments, Posts, Users), data.table_4(Comments, Posts, Users))
+  ```
+  
+  ##### Benchmark
+  
+  ```{r echo=FALSE}
+  microbenchmark::microbenchmark(
+    sqldf=sqldf_4(Comments, Posts, Users),
+    base=base_4(Comments, Posts, Users),
+    dplyr=dplyr_4(Comments, Posts, Users),
+    data.table=data.table_4(Comments, Posts, Users)
+  )
+  ```
+  
+* ### Query 5
+  
+  
+  
+  ##### Interpretation
+
+  The fifth query returns top 20 posts with the biggest number of votes made during
+  covid pandemic (between the year 2019 and 2021 and votes are either spam, 
+  offensive votes or downvotes), along with date of creation of each post, post id
+  and sum of votes made during any period.
+  
+  ##### Test of equivalency
+  
+  ```{r}
+  dplyr::all_equal(sqldf_5(Posts, Votes), base_5(Posts, Votes), convert = TRUE)
+  dplyr::all_equal(sqldf_5(Posts, Votes), dplyr_5(Posts, Votes), convert = TRUE)
+  dplyr::all_equal(sqldf_5(Posts, Votes), data.table_5(Posts, Votes), convert = TRUE)
+  ```
+  
+  ##### Benchmark
+  
+  ```{r echo=FALSE}
+  microbenchmark::microbenchmark(
+    sqldf=sqldf_5(Posts, Votes),
+    base=base_5(Posts, Votes),
+    dplyr=dplyr_5(Posts, Votes),
+    data.table=data.table_5(Posts, Votes)
+  )
+  ```
+  
+  ### Conclusions
+  
+  From the results of the microbenchmark function, we can see that the fastest are solutions
+  that use data.table library for data wrangling. One of the reasons is the implementation of
+  *order* function, which is fast and very carefully implemented. Data.table developing team also
+  remains active, in contrast to developers of other libraries, and are constantly optimizing their
+  internal algorythms, which cause data.table functions to scale better and better.
+
+  
